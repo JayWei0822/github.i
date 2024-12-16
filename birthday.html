@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生日快乐</title>
+    <style>
+        body {
+            background: linear-gradient(to top,
+                rgba(0, 0, 0, 1) 0%,
+                rgba(0, 0, 0, 0.95) 20%,
+                rgba(0, 0, 0, 0.85) 40%,
+                rgba(0, 0, 0, 0.75) 60%,
+                rgba(0, 0, 0, 0.65) 100%
+            ), url('1.jpg') center -100px/cover;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 4px #fff,
+                        0 0 8px #fff;
+            border-radius: 50%;
+            animation: twinkle 1s infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { 
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+        .message {
+            position: absolute;
+            color: white;
+            transform: rotate(-3deg);
+            text-shadow: 2px 2px 4px rgba(255, 204, 0, 0.8),
+                        0 0 20px rgba(255, 204, 0, 0.4);
+            opacity: 0;
+            animation: rise 10s linear infinite;
+            z-index: 3;
+            font-size: clamp(1rem, 4vw, 2rem);
+            white-space: nowrap;
+            left: 50%;
+            transform: translateX(-50%) rotate(-3deg);
+        }
+        @keyframes rise {
+            0% {
+                bottom: -10%;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                bottom: 110%;
+                opacity: 0;
+            }
+        }
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <canvas id="fireworksCanvas"></canvas>
+    <script>
+        const messages = [
+            "生日快乐!",
+            "祝你幸福每一天!",
+            "愿你的笑容永不停歇!",
+            "健康长寿，事事顺心!",
+            "新的一岁，新的开始!",
+            "幸福安康，心想事成!",
+            "快乐无边，笑口常开!",
+            "愿你梦想成真!",
+            "愿你前程似锦!",
+            "愿你青春永驻!",
+            "愿你平安喜乐!",
+            "愿你幸福美满!",
+            "愿你前途光明!",
+            "愿你快乐每一天!",
+            "愿你美梦成真!",
+            "愿你笑口常开!",
+            "愿你永远年轻!",
+            "愿你心想事成!",
+            "愿你开心快乐!",
+            "愿你前程锦绣!"
+        ];
+
+        function createMessage() {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.textContent = messages[Math.floor(Math.random() * messages.length)];
+            const offset = (Math.random() - 0.5) * 60;
+            messageElement.style.transform = `translateX(calc(-50% + ${offset}vw)) rotate(-3deg)`;
+            messageElement.style.fontSize = `${Math.random() * 1.5 + 1}em`;
+            document.body.appendChild(messageElement);
+
+            setTimeout(() => {
+                messageElement.remove();
+            }, 10000);
+        }
+
+        setInterval(createMessage, window.innerWidth < 600 ? 600 : 400);
+
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * (window.innerWidth < 600 ? 8 : 12),
+                    y: (Math.random() - 0.5) * (window.innerWidth < 600 ? 8 : 12)
+                };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.008 + 0.003;
+                this.size = Math.random() * (window.innerWidth < 600 ? 2 : 3) + 1;
+                this.brightness = Math.random() * 50 + 50;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.size
+                );
+                gradient.addColorStop(0, `hsla(45, 100%, ${this.brightness}%, ${this.alpha})`);
+                gradient.addColorStop(0.1, `hsla(45, 100%, ${this.brightness-20}%, ${this.alpha})`);
+                gradient.addColorStop(1, `hsla(45, 100%, ${this.brightness-30}%, 0)`);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.velocity.y += 0.08;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+                this.size *= 0.99;
+            }
+        }
+
+        class Firework {
+            constructor(x, y, targetX, targetY) {
+                this.x = x;
+                this.y = y;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.distanceToTarget = Math.sqrt(
+                    Math.pow(this.targetX - this.x, 2) + 
+                    Math.pow(this.targetY - this.y, 2)
+                );
+                this.velocity = {
+                    x: (this.targetX - this.x) / 25,
+                    y: (this.targetY - this.y) / 25
+                };
+                this.particles = [];
+                this.exploded = false;
+                this.hue = Math.random() * 30 + 30;
+            }
+
+            draw() {
+                if (!this.exploded) {
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                this.particles.forEach(particle => particle.draw());
+            }
+
+            update() {
+                if (!this.exploded) {
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                    const distanceTraveled = Math.sqrt(
+                        Math.pow(this.targetX - this.x, 2) + 
+                        Math.pow(this.targetY - this.y, 2)
+                    );
+                    if (distanceTraveled < 10) {
+                        this.explode();
+                    }
+                }
+                this.particles.forEach((particle, index) => {
+                    particle.update();
+                    if (particle.alpha <= 0) {
+                        this.particles.splice(index, 1);
+                    }
+                });
+            }
+
+            explode() {
+                this.exploded = true;
+                for (let i = 0; i < (window.innerWidth < 600 ? 180 : 250); i++) {
+                    const colors = [
+                        `hsl(${this.hue}, 100%, 70%)`,
+                        `hsl(${this.hue}, 100%, 60%)`,
+                        `hsl(${this.hue}, 100%, 50%)`,
+                        `hsl(${this.hue-10}, 100%, 50%)`,
+                        `hsl(${this.hue+10}, 100%, 50%)`,
+                        '#ffffff'
+                    ];
+                    this.particles.push(
+                        new Particle(
+                            this.x,
+                            this.y,
+                            colors[Math.floor(Math.random() * colors.length)]
+                        )
+                    );
+                }
+            }
+        }
+
+        let fireworks = [];
+        
+        canvas.addEventListener('click', (e) => {
+            fireworks.push(new Firework(
+                canvas.width / 2,
+                canvas.height,
+                e.clientX,
+                e.clientY
+            ));
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            fireworks.push(new Firework(
+                canvas.width / 2,
+                canvas.height,
+                touch.clientX,
+                touch.clientY
+            ));
+        }, { passive: false });
+
+        function createStars() {
+            const starsContainer = document.querySelector('.stars');
+            const numberOfStars = Math.floor((window.innerWidth * window.innerHeight) / 2000);
+            
+            for (let i = 0; i < numberOfStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 1}s`;
+                star.style.width = `${Math.random() * 3}px`;
+                star.style.height = star.style.width;
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        window.addEventListener('load', createStars);
+        window.addEventListener('resize', () => {
+            const starsContainer = document.querySelector('.stars');
+            starsContainer.innerHTML = '';
+            createStars();
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            fireworks.forEach((firework, index) => {
+                firework.draw();
+                firework.update();
+                if (firework.particles.length === 0 && firework.exploded) {
+                    fireworks.splice(index, 1);
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html> 
